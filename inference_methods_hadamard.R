@@ -5,15 +5,16 @@ library(phangorn)
 ##################################################
 ###inference from SRHT sketching estimators
 
-# parameters：
-# n: sample size n, p: dimension 
-# m: sketching size 
+# parameters used later：
+# n: sample size
+# p: dimension 
+# m: sketch size 
 # c: coefficient vector c, e.g., c= (1,0,0,\cdots,0)
-# K: number of repeated experiments (and also bootstrap samples)
+# K: number of subsketching samples (and also bootstrap samples)
 # b: subsketching size
 
 
-### if X and y are not of size to the power of two, padding them with zeros
+### if the sample size is not to the power of two, padding X,y with zeros makes them comformable with SRHT
 padding<-function(X,y){
   m<-nrow(X)
   if(ceiling(log(m,2))>log(m,2)){
@@ -155,7 +156,10 @@ multi_run<-function(c,m,X,y,sX,sy,K,alpha){
 
 ###############################################################
 ### compare the performence of the above five methods
-compare_methods_hadamard<-function(c,X,y,grid_m,b1,K,sim,alpha=0.1){
+### input: grid_m: sequence of sketching size m; sim: number of Monte-Carlo simulations; alpha：coverage level
+### output: the confidence intervals provided by the above five methods and the running time (measured in seconds)
+
+compare_methods_hadamard<-function(c,X,y,grid_m,b,K,sim,alpha=0.1){
   p<-ncol(X);n<-nrow(X)
   pivo_conf=sub_conf=boot_conf=plug_conf=multi_run_conf=matrix(0,sim,2*length(grid_m))
   pivo_time=sub_time=boot_time=plug_time=multi_run_time=matrix(0,sim,length(grid_m))
@@ -179,7 +183,7 @@ compare_methods_hadamard<-function(c,X,y,grid_m,b1,K,sim,alpha=0.1){
       
       
       st2<-Sys.time()
-      sub_conf[i,(2*j-1):(2*j)]<-sub_int_hadamard(b1,grid_m[j],c,X,y,SX,Sy,K,alpha)$conf
+      sub_conf[i,(2*j-1):(2*j)]<-sub_int_hadamard(b,grid_m[j],c,X,y,SX,Sy,K,alpha)$conf
       ed2<-Sys.time()
       sub_time[i,j] <- difftime(ed2, st2, units = "secs")
       
