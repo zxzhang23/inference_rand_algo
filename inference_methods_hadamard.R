@@ -3,7 +3,15 @@ library(phangorn)
 
 
 ##################################################
-###SRHT sketching
+###inference from SRHT sketching estimators
+
+# parameters：
+# n: sample size n, p: dimension 
+# m: sketching size 
+# c: coefficient vector c, e.g., c= (1,0,0,\cdots,0)
+# K: number of repeated experiments (and also bootstrap samples)
+# b: subsketching size
+
 
 ### if X and y are not of size to the power of two, padding them with zeros
 padding<-function(X,y){
@@ -58,7 +66,7 @@ pivo_hadamard<-function(c,n,sX,sy,partial=0,alpha){
 
 ###############################################################
 ###Subsketching
-###Input: b is subskeching size, m is sketching size, X and y are used in repeating the algorithms
+###Input: b is subskeching size, m is sketching size, X and y are used to generate repeated samples of smaller size b
 sub_int_hadamard<-function(b,m,c,X,y,sX,sy,K,alpha=0.05){
   p<-ncol(X)
   pad<-padding(X,y)
@@ -147,7 +155,7 @@ multi_run<-function(c,m,X,y,sX,sy,K,alpha){
 
 ###############################################################
 ### compare the performence of the above five methods
-compare_methods_hadamard<-function(c,X,y,grid_m,b1,K,sim){
+compare_methods_hadamard<-function(c,X,y,grid_m,b1,K,sim,alpha=0.1){
   p<-ncol(X);n<-nrow(X)
   pivo_conf=sub_conf=boot_conf=plug_conf=multi_run_conf=matrix(0,sim,2*length(grid_m))
   pivo_time=sub_time=boot_time=plug_time=multi_run_time=matrix(0,sim,length(grid_m))
@@ -164,29 +172,29 @@ compare_methods_hadamard<-function(c,X,y,grid_m,b1,K,sim){
       
       
       st1<-Sys.time()
-      pivo_conf[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n1,SX,Sy,partial=0,alpha=0.1)$conf
+      pivo_conf[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n1,SX,Sy,partial=0,alpha)$conf
       ed1<-Sys.time()
       pivo_time[i,j] <- difftime(ed1, st1, units = "secs")
       
       
       
       st2<-Sys.time()
-      sub_conf[i,(2*j-1):(2*j)]<-sub_int_hadamard(b1,grid_m[j],c,X,y,SX,Sy,K,0.1)$conf
+      sub_conf[i,(2*j-1):(2*j)]<-sub_int_hadamard(b1,grid_m[j],c,X,y,SX,Sy,K,alpha)$conf
       ed2<-Sys.time()
       sub_time[i,j] <- difftime(ed2, st2, units = "secs")
       
       st3<-Sys.time()
-      boot_conf[i,(2*j-1):(2*j)]<-boot_int(c,SX,Sy,K,0.1)$conf
+      boot_conf[i,(2*j-1):(2*j)]<-boot_int(c,SX,Sy,K,alpha)$conf
       ed3<-Sys.time()
       boot_time[i,j]<-difftime(ed3, st3, units = "secs") 
       
       st4<-Sys.time()
-      plug_conf[i,(2*j-1):(2*j)]<-plug_int(c,grid_m[j],X,y,SX,Sy,K,0.1)$conf
+      plug_conf[i,(2*j-1):(2*j)]<-plug_int(c,grid_m[j],X,y,SX,Sy,K,alpha)$conf
       ed4<-Sys.time()
       plug_time[i,j]<-difftime(ed4, st4, units = "secs")
       
       st5<-Sys.time()
-      multi_run_conf[i,(2*j-1):(2*j)]<-multi_run(c,grid_m[j],X,y,SX,Sy,K,0.1)$conf
+      multi_run_conf[i,(2*j-1):(2*j)]<-multi_run(c,grid_m[j],X,y,SX,Sy,K,alpha)$conf
       ed5<-Sys.time()
       multi_run_time[i,j]<-difftime(ed5, st5, units = "secs")
     }
