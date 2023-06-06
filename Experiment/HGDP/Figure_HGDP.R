@@ -5,7 +5,7 @@ library(PropCIs)
 library(ggplot2)
 #############
 #load the results, grid_m, and the first coordinate of the real solution
-conf0= read.csv("C:/Users/zhixz/Dropbox (Personal)/R/sketching/code_randomized_algorithms/real data analysis/0hgdp_conf.csv", header =TRUE, sep = ",")
+conf0= read.csv("C:/Users/zhixz/Dropbox (Personal)/R/sketching/code_github/0hgdp_conf.csv")
 conf=conf0[,-1]
 sim=nrow(conf)
 grid_m=seq(400,800,50)
