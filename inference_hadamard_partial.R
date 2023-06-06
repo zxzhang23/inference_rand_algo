@@ -3,7 +3,9 @@ library(phangorn)
 
 ##################################################
 ### inference from partial sketching estimators
-### the main difference from the sketch-and-solve case is that $X^\top y$ is known and the partial sketching estimators should be debiased
+### the main differences from the sketch-and-solve case are: 
+###  1. $X^\top y$ is known; 
+###  2. the partial sketching estimators should be debiased.
 
 
 padding<-function(X,y){
@@ -162,17 +164,8 @@ y<-X%*%beta+as.vector(rnorm(n,sd=0.01))
 Xty<-as.vector(t(X)%*%y)
 ls<-solve(t(X)%*%X)%*%Xty
 print(ls[1])
-
-
-
 set.seed(NULL)
 c<-c(1,rep(0,p-1))
-
-
-
-grid_m=seq(200,2000,200)
-
-
 
 compare_methods_hadamard_partial<-function(c,X,y,grid_m,b,K=20,sim,alpha=0.1){
   p<-ncol(X);n<-nrow(X)
@@ -200,7 +193,7 @@ compare_methods_hadamard_partial<-function(c,X,y,grid_m,b,K=20,sim,alpha=0.1){
   return(list(pivo_conf=pivo_conf,sub_conf=sub_conf,boot_conf=boot_conf,plug_conf=plug_conf,multi_run_conf=multi_run_conf))
 }
 
-
+grid_m=seq(200,2000,200)
 res_hadamard<-compare_methods_hadamard_partial(c,X,y,grid_m,100,K=100,sim=50,0.1)
 conf<-cbind(res_hadamard$pivo_conf,res_hadamard$sub_conf,res_hadamard$boot_conf,res_hadamard$plug_conf,res_hadamard$multi_run_conf)
 
