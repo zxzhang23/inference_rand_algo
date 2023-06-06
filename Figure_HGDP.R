@@ -19,8 +19,7 @@ accept<-(left<ls[1])&(ls[1]<right)
 cov0<-apply(accept,2,sum)
 
 cov<-matrix(cov0,ncol(conf)/(2*length(grid_m)),length(grid_m),byrow=TRUE)
-ratio0<-cov/sim
-ratio<-ratio0
+ratio<-cov/sim
 
 ci<-function(x){exactci(x,sim,0.95)$conf.int[1:2]}
 
