@@ -89,7 +89,6 @@ for(i in 1:sim){
   }
 }
 
-#####partial hadamard sketching
 pivo_conf_hadamard_pa=matrix(0,sim,2*length(grid_m))
 for(i in 1:sim){
   for(j in 1:length(grid_m)){
@@ -97,28 +96,6 @@ for(i in 1:sim){
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
     pivo_conf_hadamard_pa[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,lssk,partial=1,alpha=0.05)$conf+(n0*(grid_m[j]-p))*sum(c*lssk)/(grid_m[j]*(n0-p))
-  }
-}
-
-
-pivo_conf_dct_s=matrix(0,sim,2*length(grid_m))
-for(i in 1:sim){
-  for(j in 1:length(grid_m)){
-    res<-Esticoef_dct(grid_m[j],n,c,X,y,partial=0)
-    SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
-    lssk<-res$r1
-    pivo_conf_dct_s[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n,SX,Sy,lssk,partial=0,alpha=0.05)$conf+sum(c*lssk)
-  }
-}
-
-
-pivo_conf_dct_pa=matrix(0,sim,2*length(grid_m))
-for(i in 1:sim){
-  for(j in 1:length(grid_m)){
-    res<-Esticoef_dct(grid_m[j],n,c,X,y,partial=1)
-    SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
-    lssk<-res$r1
-    pivo_conf_dct_pa[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n,SX,Sy,lssk,partial=1,alpha=0.05)$conf+(n*(grid_m[j]-p))*sum(c*lssk)/(grid_m[j]*(n-p))
   }
 }
 
