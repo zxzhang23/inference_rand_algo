@@ -1,4 +1,4 @@
-###read the functions from "inference_methods_hadamard.R" and also HGDP data
+###read the functions from "inference_methods_hadamard.R" 
 setwd("C:/Users/zhixz/Dropbox (Personal)/R/sketching/code_github")
 source("inference_methods_hadamard.R")
 
