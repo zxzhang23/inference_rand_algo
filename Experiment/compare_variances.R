@@ -54,7 +54,8 @@ th_v2<-t3*t4;th_v2 #for partial sketching estimators
 kappa4 = 10
 ep<- as.vector(y - X%*%lsbeta)
 th_v_iid<-(kappa4 - 3)*sum((l*ep)^2)+ (grid_m/(grid_m-p))*sum(l^2)*sum(ep^2)
-th_v2_iid<-(grid_m/(grid_m-p))^2*(kappa4 - 3)*sum((l*(y-ep))^2)+(grid_m/(grid_m-p))^3*(sum(l^2)*sum((y-ep)^2)+sum(c*lsbeta)^2)
+th_v2_iid<-(grid_m/(grid_m-p))^2*(kappa4 - 3)*sum((l*(y-ep))^2)+
+   (grid_m/(grid_m-p))^3*(sum(l^2)*sum((y-ep)^2)+sum(c*lsbeta)^2)
 
 
 #####################
@@ -119,9 +120,10 @@ for(i in 1:sim){
 #################################################
 ### display the variances
 sketch_size<-as.vector(t(matrix(rep(grid_m,sim),length(grid_m))))
-df_var1<-data.frame(sketch_size,uniform_sampling=as.vector(r_subsample)*sqrt(sketch_size),iid=as.vector(r_iid)*sqrt(sketch_size),
-                    hadamard=as.vector(r_srht)*sqrt(sketch_size))
-df_var2<-data.frame(uniform_sampling=as.vector(r_subsample_p)*sqrt(sketch_size),iid=as.vector(r_iid_p)*sqrt(sketch_size),hadamard=as.vector(r_srht_p)*sqrt(sketch_size))
+df_var1<-data.frame(sketch_size,uniform_sampling=as.vector(r_subsample)*sqrt(sketch_size),
+                    iid=as.vector(r_iid)*sqrt(sketch_size),hadamard=as.vector(r_srht)*sqrt(sketch_size))
+df_var2<-data.frame(uniform_sampling=as.vector(r_subsample_p)*sqrt(sketch_size),
+                    iid=as.vector(r_iid_p)*sqrt(sketch_size),hadamard=as.vector(r_srht_p)*sqrt(sketch_size))
 
 v1<-aggregate(.~sketch_size,df_var1, FUN = stats::var)
 v2<-aggregate(.~sketch_size,df_var2, FUN = stats::var)
@@ -134,20 +136,28 @@ res_vr1$var<-log(res_vr1$var,10)
 res_vr2$var<-log(res_vr2$var,10)
 
 
-p1f<-ggplot(res_vr1,aes(x=sketch_size/n,var,group=type,color=type,linetype=type,pointtype=type))+geom_point(aes(shape=type,color=type),size=1.8)+geom_line(aes(size=type))+
+p1f<-ggplot(res_vr1,aes(x=sketch_size/n,var,group=type,color=type,linetype=type,pointtype=type))+
+  geom_point(aes(shape=type,color=type),size=1.8)+geom_line(aes(size=type))+
   scale_shape_manual(values=c(15,3,16,4,17))+
   scale_size_manual(values=c(0.8,0.8,0.8,0.8,0.8))+
   scale_linetype_manual(values = c(1,5,4,3,2))+
   scale_color_manual(values=c('#FF0000','#000000','#0066CC','green','#FFAA00'))+
-  labs(title = "Complete sketching", x = 'm/n')+ylab(expression(log[10]("var")))+theme(plot.title = element_text(hjust = 0.5),legend.box.background = element_rect(color="black", size=1),legend.text=element_text(size=10),axis.text.x = element_text(size = 12), axis.title.x = element_text(color = "grey20", size = 15),axis.text.y = element_text(size = 12), axis.title.y = element_text(color = "grey20", size = 15))
+  labs(title = "Complete sketching", x = 'm/n')+ylab(expression(log[10]("var")))+
+  theme(plot.title = element_text(hjust = 0.5),legend.box.background = element_rect(color="black", size=1),
+        legend.text=element_text(size=10),axis.text.x = element_text(size = 12), axis.title.x = element_text(color = "grey20", size = 15),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(color = "grey20", size = 15))
 
 
-p1p<-ggplot(res_vr2,aes(x=sketch_size/n,var,group=type,color=type,linetype=type,pointtype=type))+geom_point(aes(shape=type,color=type),size=1.8)+geom_line(aes(size=type))+
+p1p<-ggplot(res_vr2,aes(x=sketch_size/n,var,group=type,color=type,linetype=type,pointtype=type))+
+  geom_point(aes(shape=type,color=type),size=1.8)+geom_line(aes(size=type))+
   scale_shape_manual(values=c(15,3,16,4,17))+
   scale_size_manual(values=c(0.8,0.8,0.8,0.8,0.8))+
   scale_linetype_manual(values = c(1,5,4,3,2))+
   scale_color_manual(values=c('#FF0000','#000000','#0066CC','green','#FFAA00'))+
-  labs(title = "Partial sketching", x = 'm/n')+ylab(expression(log[10]("var")))+theme(plot.title = element_text(hjust = 0.5),legend.box.background = element_rect(color="black", size=0.5),legend.text=element_text(size=10),axis.text.x = element_text(size = 12), axis.title.x = element_text(color = "grey20", size = 15),axis.text.y = element_text(size = 12), axis.title.y = element_text(color = "grey20", size = 15))
+  labs(title = "Partial sketching", x = 'm/n')+ylab(expression(log[10]("var")))+
+  theme(plot.title = element_text(hjust = 0.5),legend.box.background = element_rect(color="black", size=0.5),
+        legend.text=element_text(size=10),axis.text.x = element_text(size = 12), axis.title.x = element_text(color = "grey20", size = 15),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(color = "grey20", size = 15))
 
 
 combined <- p1f + p1p & theme(legend.position = "right",legend.title=element_blank())
