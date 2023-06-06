@@ -1,3 +1,4 @@
+### generate sketching estimators
 
 library(mvtnorm)
 library(phangorn)
