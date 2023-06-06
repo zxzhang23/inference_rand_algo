@@ -8,3 +8,4 @@ The main function is inference_hadamard.R, include all five inference methods ba
    
 See the /Experiments folder for the code to reproduce the experiments presented.
 
+The HGDP data is downloaded from [Click here to download the data](https://github.com/dobriban/DPA/blob/master/Experiments/Experiment%2011%20-%20HGDP/hgdp/chr22/hgdp.txt)
