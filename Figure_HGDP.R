@@ -35,7 +35,9 @@ upper<-int[,seq(2,2*length(grid_m),2)]
 
 library(ggplot2)
 x <- grid_m
-df_full <- data.frame(x = grid_m, y1 =ratio[1,], y2=ratio[2,],y3=ratio[3,],y4=ratio[4,],y5=ratio[5,], y_upper1 =upper[1,] , y_lower1 = lower[1,],y_upper2=upper[2,],y_lower2=lower[2,],y_upper3=upper[3,],y_lower3=lower[3,],y_upper4=upper[4,],y_lower4=lower[4,],y_upper5=upper[5,],y_lower5=lower[5,])
+df_full <- data.frame(x = grid_m, y1 =ratio[1,], y2=ratio[2,],y3=ratio[3,],y4=ratio[4,],y5=ratio[5,], y_upper1 =upper[1,] ,
+                      y_lower1 = lower[1,],y_upper2=upper[2,],y_lower2=lower[2,],y_upper3=upper[3,],y_lower3=lower[3,],
+                      y_upper4=upper[4,],y_lower4=lower[4,],y_upper5=upper[5,],y_lower5=lower[5,])
 
 
 len<-apply(right-left,2,mean)
@@ -45,7 +47,8 @@ lensd<-matrix(len_sd,5,length(grid_m),byrow=TRUE)
 low<-conflen-lensd
 upp<-conflen+lensd
 
-df_len<-data.frame(x=grid_m,y1=conflen[1,],y2=conflen[2,],y3=conflen[3,],y4=conflen[4,],y5=conflen[5,],low1=low[1,],low2=low[2,],low4=low[4,],low5=low[5,],upp1=upp[1,],upp2=upp[2,],upp4=upp[4,],upp5=upp[5,])
+df_len<-data.frame(x=grid_m,y1=conflen[1,],y2=conflen[2,],y3=conflen[3,],y4=conflen[4,],y5=conflen[5,],
+                   low1=low[1,],low2=low[2,],low4=low[4,],low5=low[5,],upp1=upp[1,],upp2=upp[2,],upp4=upp[4,],upp5=upp[5,])
 
 
 ggplot(df_full, aes(x = x)) +
