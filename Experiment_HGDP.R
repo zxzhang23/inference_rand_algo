@@ -2,7 +2,12 @@
 ###read the functions from "inference_methods_hadamard.R" and also HGDP data
 setwd("C:/Users/zhixz/Dropbox (Personal)/R/sketching/code_github")
 source("inference_methods_hadamard.R")
-hgdp <- read.csv("C:/Users/zhixz/Dropbox (Personal)/R/sketching/code_randomized_algorithms/real data analysis/hgdp.csv", header =TRUE, sep = ",")
+
+url <- "https://raw.githubusercontent.com/dobriban/DPA/master/Experiments/Experiment%2011%20-%20HGDP/hgdp/chr22/hgdp.txt"
+file_path <- "C:/Users/zhixz/Dropbox (Personal)/R/sketching/code_github/hgdp.txt"  
+
+download.file(url, file_path)
+hgdp<-read.table(file_path,sep=',')
 
 
 ####  select the first 200 features to form X, and the next feature as y
