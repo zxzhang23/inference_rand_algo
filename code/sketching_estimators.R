@@ -27,12 +27,13 @@ Esticoef_iid<-function(m,n,c,X,y,type=6,partial=0){
   if(type==5){S<-matrix(rt(m*n,10),m,n)/sqrt(10/8)/sqrt(m)}
   if(type==6){S<-matrix(sampleDistsparse(m*n),m)/sqrt(m)}
   
-  P<-S%*%X
-  M<-solve(t(P)%*%P)
-  if(partial==0){w<-t(P)%*%(S%*%y);g<-M%*%w}
+  SX<-S%*%X;Sy<-S%*%y
+  M<-solve(t(SX)%*%SX)
+  if(partial==0){w<-t(SX)%*%Sy;g<-M%*%w}
   else{g<-M%*%(t(X)%*%y)}
-  return(list(r1=g,r2=sum(c*g)))
+  return(list(r1=g,r2=sum(c*g),r3=cbind(SX,Sy)))
 }
+
 
 ### uniform orthogonal sketching
 Generate_Haar<-function(m,n){
@@ -42,12 +43,12 @@ Generate_Haar<-function(m,n){
 }
 
 Esticoef_Haar<-function(m,n,c,X,y,partial=0){
-  S_haar<-Generate_Haar(m,n)
-  P<-S_haar%*%X
-  M<-solve(t(P)%*%P)
-  if(partial==0){ w<-t(P)%*%(S_haar%*%y); g<-M%*%w }
+  S<-Generate_Haar(m,n)
+  SX<-S%*%X; Sy<-S%*%y
+  M<-solve(t(SX)%*%SX)
+  if(partial==0){ w<-t(SX)%*%Sy; g<-M%*%w }
   else{g<-M%*%(t(X)%*%y)}
-  return(list(r1=g,r2=sum(c*g)))
+  return(list(r1=g,r2=sum(c*g),r3=cbind(SX,Sy)))
 }
 
 ### Hadamard sketching
