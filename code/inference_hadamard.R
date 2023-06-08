@@ -73,7 +73,6 @@ sub_int_hadamard<-function(b,m,c,X,y,sX,sy,K,alpha=0.05){
   pad<-padding(X,y)
   X1<-pad$padX;y1<-pad$pady
   n1<-nrow(X1)
-  gamma=b/n1
   subske=0
   for(i in 1:K){
     SXy<-Esticoef_SRHT(b,c,X,y,partial=0)$r3
