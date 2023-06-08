@@ -58,10 +58,8 @@ pivo_hadamard<-function(c,n,sX,sy,partial=0,alpha){
     center<-((gamma-xi)/(gamma*(1-xi)))*sum(c*lssk)
     est_v<-((1-gamma)*(gamma-xi)/(gamma*(1-xi)^3))*((sum((sX%*%lssk)^2)*sum(c*(invsX%*%c))+2*(sum(c*lssk))^2))
   }
-  
   rb=qnorm(1-alpha/2,sd=sqrt(est_v/m))
   lb=qnorm(alpha/2,sd=sqrt(est_v/m))
-  
   list(conf=c(center-rb,center-lb))
 }
 
@@ -79,16 +77,12 @@ sub_int_hadamard<-function(b,m,c,X,y,sX,sy,K,alpha=0.05){
     g<-qr.solve(SXy[,1:p],SXy[,p+1])
     subske[i]<-g[1]
   }
-  
   taum<-sqrt((m-p)*(n1-p)/(n1-m))
   taub<-sqrt((b-p)*(n1-p)/(n1-b))
-  
   lssk<-solve(t(sX)%*%sX)%*%(t(sX)%*%sy)
   center<-sum(c*lssk)
-  
   lb<-quantile(taub*(subske-center),alpha/2)/(taum-taub)
   rb<-quantile(taub*(subske-center),(1-alpha/2))/(taum-taub)
-  
   return(list(conf=c(center-rb,center-lb)))
 }
 
@@ -104,11 +98,8 @@ boot_int<-function(c,sX,sy,K,alpha){
     r_bootstrap[,i]<-qr.solve(A,b)
   }
   bt<-t(c)%*%r_bootstrap
-  
   lssk<-solve(t(sX)%*%sX)%*%(t(sX)%*%sy)
   center<-sum(c*lssk)
-  
-  
   rb<-quantile(bt-center,1-alpha/2)
   lb<-quantile(bt-center,alpha/2)
   return(list(conf=c(center-rb,center-lb)))
@@ -127,7 +118,6 @@ plug_int<-function(c,m,X,y,sX,sy,K,alpha){
   v<-var(plugske)
   rb=qnorm(1-alpha/2,sd=sqrt(v))
   lb=qnorm(alpha/2,sd=sqrt(v))
-  
   lssk<-solve(t(sX)%*%sX)%*%(t(sX)%*%sy)
   center<-sum(c*lssk)
   return(list(conf=c(center-rb,center-lb)))
@@ -159,7 +149,7 @@ multi_run<-function(c,m,X,y,sX,sy,K,alpha){
 ### output: the confidence intervals provided by the above five methods and the running time (measured in seconds)
 
 compare_methods_hadamard<-function(c,X,y,grid_m,b,K,sim,alpha=0.1){
-  p<-ncol(X);n<-nrow(X)
+  p<-ncol(X);n<-nrow(X); Xty<-t(X)%*%y
   pivo_conf=sub_conf=boot_conf=plug_conf=multi_run_conf=matrix(0,sim,2*length(grid_m))
   pivo_time=sub_time=boot_time=plug_time=multi_run_time=matrix(0,sim,length(grid_m))
   for(i in 1:sim){
@@ -167,19 +157,14 @@ compare_methods_hadamard<-function(c,X,y,grid_m,b,K,sim,alpha=0.1){
       SD<-Esticoef_SRHT(grid_m[j],c,X,y,partial=0)$r3
       SX<-SD[,1:p];Sy<-SD[,p+1]
       
-      
-      ##be careful of the sketching type in pivo_iid_growp,sub_int,and skeske_int
       Xy<-padding(X,y)
       X1<-Xy$padX;y1<-Xy$pady
       n1=nrow(X1);
-      
-      
+     
       st1<-Sys.time()
       pivo_conf[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n1,SX,Sy,partial=0,alpha)$conf
       ed1<-Sys.time()
       pivo_time[i,j] <- difftime(ed1, st1, units = "secs")
-      
-      
       
       st2<-Sys.time()
       sub_conf[i,(2*j-1):(2*j)]<-sub_int_hadamard(b,grid_m[j],c,X,y,SX,Sy,K,alpha)$conf
