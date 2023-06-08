@@ -1,6 +1,7 @@
 library(mvtnorm)
 library(phangorn)
 
+
 #Case 2
 p=500;n=2000
 genesig<-function(t,n){
@@ -21,6 +22,7 @@ ev<-diag(seq(0.1,1,by=(1-0.1)/(p-1)))
 X<-U%*%ev%*%V
 beta<-c(rep(1,floor(0.2*p)),0.1*rep(1,p-2*floor(0.2*p)),rep(1,floor(0.2*p)))
 y<-X%*%beta+as.vector(rnorm(n,sd=0.01))
+Xty<-t(X)%*%y
 ls<-qr.solve(X,y)
 c=c(1,rep(0,p-1))
 #c=c(1,-1,rep(0,p-2))
@@ -37,7 +39,7 @@ for(i in 1:sim){
     res<-Esticoef_iid(grid_m[j],n,c,X,y,type=6,partial=0)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
-    pivo_conf_iid_s[i,(2*j-1):(2*j)]<-pivo_iid_growp(c,n,SX,Sy,lssk,partial=0,alpha=0.05)$conf+sum(c*lssk)
+    pivo_conf_iid_s[i,(2*j-1):(2*j)]<-pivo_iid(c,n,SX,Sy,partial=0,alpha=0.05)$conf
   }
 }
 
@@ -47,7 +49,7 @@ for(i in 1:sim){
     res<-Esticoef_iid(grid_m[j],n,c,X,y,type=6,partial=1)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
-    pivo_conf_iid_pa[i,(2*j-1):(2*j)]<-pivo_iid_growp(c,n,SX,Sy,lssk,partial=1,alpha=0.05)$conf+(grid_m[j]-p)*sum(c*lssk)/grid_m[j]
+    pivo_conf_iid_pa[i,(2*j-1):(2*j)]<-pivo_iid(c,n,SX,Sy,partial=1,alpha=0.05)$conf
   }
 }
 
@@ -58,7 +60,7 @@ for(i in 1:sim){
     res<-Esticoef_Haar(grid_m[j],n,c,X,y,partial=0)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
-    pivo_conf_haar_s[i,(2*j-1):(2*j)]<-pivo_haar(c,n,SX,Sy,lssk,partial=0,alpha=0.05)$conf+sum(c*lssk)
+    pivo_conf_haar_s[i,(2*j-1):(2*j)]<-pivo_haar(c,n,SX,Sy,partial=0,alpha=0.05)$conf
   }
 }
 
@@ -68,11 +70,9 @@ for(i in 1:sim){
     res<-Esticoef_Haar(grid_m[j],n,c,X,y,partial=1)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
-    pivo_conf_haar_pa[i,(2*j-1):(2*j)]<-pivo_haar(c,n,SX,Sy,lssk,partial=1,alpha=0.05)$conf+n*(grid_m[j]-p)*sum(c*lssk)/(grid_m[j]*(n-p))
+    pivo_conf_haar_pa[i,(2*j-1):(2*j)]<-pivo_haar(c,n,SX,Sy,partial=1,alpha=0.05)$conf
   }
 }
-
-
 
 
 Xy<-padding(X,y)
@@ -85,7 +85,7 @@ for(i in 1:sim){
     res<-Esticoef_SRHT_fast(grid_m[j],n0,c,X0,y0,partial=0)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
-    pivo_conf_hadamard_s[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,lssk,partial=0,alpha=0.05)$conf+sum(c*lssk)
+    pivo_conf_hadamard_s[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,partial=0,alpha=0.05)$conf
   }
 }
 
@@ -95,7 +95,7 @@ for(i in 1:sim){
     res<-Esticoef_SRHT_fast(grid_m[j],n0,c,X0,y0,partial=1)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
-    pivo_conf_hadamard_pa[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,lssk,partial=1,alpha=0.05)$conf+(n0*(grid_m[j]-p))*sum(c*lssk)/(grid_m[j]*(n0-p))
+    pivo_conf_hadamard_pa[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,partial=1,alpha=0.05)$conf
   }
 }
 
