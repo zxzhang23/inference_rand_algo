@@ -82,7 +82,7 @@ pivo_conf_hadamard_s=matrix(0,sim,2*length(grid_m))
 
 for(i in 1:sim){
   for(j in 1:length(grid_m)){
-    res<-Esticoef_SRHT_fast(grid_m[j],n0,c,X0,y0,partial=0)
+    res<-Esticoef_SRHT(grid_m[j],n0,c,X0,y0,partial=0)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
     pivo_conf_hadamard_s[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,partial=0,alpha=0.05)$conf
@@ -92,7 +92,7 @@ for(i in 1:sim){
 pivo_conf_hadamard_pa=matrix(0,sim,2*length(grid_m))
 for(i in 1:sim){
   for(j in 1:length(grid_m)){
-    res<-Esticoef_SRHT_fast(grid_m[j],n0,c,X0,y0,partial=1)
+    res<-Esticoef_SRHT(grid_m[j],n0,c,X0,y0,partial=1)
     SX<-res$r3[,1:p];Sy<-res$r3[,p+1]
     lssk<-res$r1
     pivo_conf_hadamard_pa[i,(2*j-1):(2*j)]<-pivo_hadamard(c,n0,SX,Sy,partial=1,alpha=0.05)$conf
