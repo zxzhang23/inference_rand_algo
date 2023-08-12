@@ -1,8 +1,8 @@
 # inference_rand_algo
 
-Code to reproduce the results from the paper "A framework for statistical inference via randomized algorithms".
+Code to reproduce the results from the paper "A framework for statistical inference via randomized algorithms" by Zhang, Lee and Dobriban: https://arxiv.org/abs/2307.11255.
 
-/code folder includes all functions impleting the methods and simulations.
+The /code folder includes all functions impleting the methods and simulations.
 
 The main function is inference_hadamard.R, and includes all inference methods based on Hadamard sketching estimators.
    
