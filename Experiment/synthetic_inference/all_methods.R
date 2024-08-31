@@ -28,6 +28,7 @@ c<-c(1,rep(0,p-1))
 print(sum(c*ls))
 
 grid_m<-seq(1500,4500,300)
-res_hadamard<-compare_methods_hadamard(c,X,y,grid_m,1000,K=100,sim=500,alpha=0.1)
+grid_b<-rep(600,length(grid_m))
+res_hadamard<-compare_methods_hadamard(c,X,y,grid_m,grid_b,K=100,sim=500,alpha=0.1)
 conf<-cbind(res_hadamard$pivo_conf,res_hadamard$sub_conf,res_hadamard$boot_conf,res_hadamard$plug_conf,res_hadamard$multi_run_conf)
 write.csv(conf,"0p500n8000b1000K100_conf.csv")
