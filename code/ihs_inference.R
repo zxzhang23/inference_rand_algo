@@ -128,16 +128,19 @@ boot_ite<-function(m,c,X,y,skedat,itebeta,K,alpha=0.1){
   Xty<-t(X)%*%y
   ite<-length(itebeta)
   r_bootstrap<-matrix(0,K,ite)
-  beta<-matrix(0,p,ite+1)
+  beta=boot_beta<-matrix(0,p,ite+1)
   for(j in 2:(ite+1)){
     sX<-skedat[,(1+(j-2)*p):((j-1)*p)]
+    M<-solve(t(sX)%*%sX)
+    Xbeta<-X%*%beta[,j-1];XtXbeta<-t(X)%*%Xbeta
+    beta[,j]<-M%*%(Xty-XtXbeta)+beta[,j-1]
     for(i in 1:K){
       smp<-sample(m,replace=TRUE)
       A<-sX[smp,]
       M<-solve(t(A)%*%A)
       Xbeta<-X%*%beta[,j-1];XtXbeta<-t(X)%*%Xbeta
-      beta[,j]<-M%*%(Xty-XtXbeta)+beta[,j-1]
-      r_bootstrap[i,j-1]<-sum(c*beta[,j])
+      boot_beta[,j]<-M%*%(Xty-XtXbeta)+beta[,j-1]
+      r_bootstrap[i,j-1]<-sum(c*boot_beta[,j])
     }
   }
   
@@ -146,6 +149,7 @@ boot_ite<-function(m,c,X,y,skedat,itebeta,K,alpha=0.1){
   
   return(list(lb=lb,rb=rb))
 }
+
 
 
 
