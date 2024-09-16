@@ -56,7 +56,7 @@ sprintf("%.20f",ls[1])
 set.seed(NULL)
 c<-c(1,rep(0,p-1))
 
-res<-compare_ite(c,1000,X,y,10,500,50,100,alpha=0.1)
+res<-compare_ite(c,1000,X,y,10,500,50,500,alpha=0.1)
 
 
 pivo_conf<-res$pivo_conf
