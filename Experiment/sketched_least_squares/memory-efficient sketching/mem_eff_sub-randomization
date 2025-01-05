@@ -1,0 +1,337 @@
+# This file contains a complete experiment on HPC using memory-efficient approach to 
+# perform sub-randomization with a data of 130GB
+args <- (commandArgs(trailingOnly=TRUE))
+cat(args[1])
+if(length(args) == 1){
+  index <- as.numeric(args[1])  #folder number
+  set.seed(index)
+} else {
+  stop()
+}
+
+
+# Required Libraries
+library(phangorn) # for fhm function
+library(memuse)   # for memory reporting
+library(data.table)
+
+
+# Function to pad X and y with zeros if sample size is not a power of two
+padding <- function(X, y) {
+  m <- nrow(X)
+  p <- ncol(X)
+  if (ceiling(log(m, 2)) > log(m, 2)) {
+    m1 <- floor(log(m, 2)) + 1
+    padX <- rbind(X, matrix(0, 2^m1 - m, p))
+    pady <- append(y, rep(0, 2^m1 - m))
+  } else {
+    padX <- X
+    pady <- y
+  }
+  return(list(padX = padX, pady = pady))
+}
+
+# Subsampled Randomized Hadamard Transform (SRHT) function
+SRHT <- function(select, D, a) {
+  Da <- D * a
+  Sa <- fhm(Da)[select]
+  return(Sa)
+}
+
+# Pivotal method for confidence interval calculation
+pivo_hadamard <- function(c, n, sX, sy, partial = 0, alpha) {
+  m <- nrow(sX)
+  p <- ncol(sX)
+  xi <- p / n
+  gamma <- m / n
+  invsX <- solve(t(sX) %*% sX)
+  if (partial == 0) {
+    lssk <- invsX %*% (t(sX) %*% sy)
+    center <- sum(c * lssk)
+    sep <- sy - sX %*% lssk
+    est_v <- (gamma * (1 - gamma) / ((gamma - xi) * (1 - xi))) * sum(c * (invsX %*% c)) * sum(sep^2)
+  } else {
+    lssk <- invsX %*% Xty
+    center <- ((gamma - xi) / (gamma * (1 - xi))) * sum(c * lssk)
+    est_v <- ((1 - gamma) * (gamma - xi) / (gamma * (1 - xi)^3)) * 
+      (sum((sX %*% lssk)^2) * sum(c * (invsX %*% c)) + 2 * (sum(c * lssk))^2)
+  }
+  rb <- qnorm(1 - alpha / 2, sd = sqrt(est_v / m))
+  lb <- qnorm(alpha / 2, sd = sqrt(est_v / m))
+  list(conf = c(center - rb, center - lb))
+}
+
+# Set sample size and calculate related parameters
+n <- 4000000
+p <- 2000
+grid_m <- 300000
+grid_b <- 4000
+grid_K <- 20
+
+# Generate synthetic data
+if(FALSE){
+  cat("Generating synthetic data...\n")
+  cat(sprintf("Sample size (n): %d\n", n))
+  cat(sprintf("Number of features (p): %d\n", p))
+  cat(sprintf("Grid of sample size for subsampling (grid_m): %d\n", grid_m))
+  cat(sprintf("Grid of sample size for bootstrap (grid_b): %d\n", grid_b))
+  cat(sprintf("Number of iterations (grid_K): %d\n", grid_K))
+  set.seed(123)
+  X <- matrix(rnorm(n * p), n, p)
+  beta <- seq(1, p) / p
+  y <- X %*% beta + rnorm(n, sd = 1)
+  set.seed(NULL)
+  pad <- padding(X, y)
+  X1 <- pad$padX
+  y1 <- pad$pady
+  rm(X)
+  rm(y)
+  n1<-nrow(X1)
+  Xy1<-cbind(X1,y1)
+  write.csv(Xy1, sprintf("data_matrix_n%d_p%d.csv", n1, p+1), row.names = FALSE)  # CSV format
+}
+
+# Load the full data and Compute full least squares solution and measure time/memory
+if(FALSE){
+  X1 <- fread(sprintf("data_matrix_n%d_p%d.csv", n1, p+1), 
+              select = 1:p,
+              header = TRUE, data.table = FALSE)
+  y1<-as.matrix(fread(sprintf("data_matrix_n%d_p%d.csv", n1, p+1), 
+                      select = p+1,
+                      header = TRUE, data.table = FALSE))
+  cat("Computing full least squares solution...\n")
+  mem_bf <- Sys.procmem()$size
+  st <- Sys.time()
+  ls <- solve(qr(X1, LAPACK = TRUE), y1)
+  ed <- Sys.time()
+  mem_af <- Sys.procmem()$size
+  lstim <- difftime(ed, st, units = "secs")
+  cat(sprintf("RAM used in computing full LS: %s\n", mem_af - mem_bf))
+  cat(sprintf("Running time for full least squares: %s secs\n", lstim))
+  cat(sprintf("The amount of total RAM used by the current R process is %s and the maximum memory usage is %s\n",
+              Sys.procmem()$size, Sys.procmem()$peak))
+  
+  # Print the last element of the full least squares solution
+  cat("Full least squares solution (last element):\n")
+  cat(ls[p], "\n")
+}
+
+# Blocking the original data
+num_blocks <- 40
+block_size <- p/num_blocks
+n1=2^22
+
+if(FALSE){
+  full_data <- fread(sprintf("data_matrix_n%d_p%d.csv", n1, p+1), 
+                     header = TRUE,
+                     data.table = FALSE)               
+  
+  for(i in 1:num_blocks){
+    chunk_cols <- ((i-1)*block_size+1):(i*block_size)
+    write.csv(
+      full_data[,chunk_cols],
+      sprintf("data_matrix_chunk_%d_n%d_p%d.csv", i,n1,block_size),
+      row.names = FALSE
+    )
+  }
+  write.csv(
+    full_data[,p+1],
+    sprintf("data_matrix_n%d_p%d.csv",n1,1),
+    row.names = FALSE
+  )
+}                     
+
+
+# Memory-effcient sub-randomization
+# Set simulation parameters
+sim <- 1    # number of replications in each parallel job
+alpha <- 0.1  # confidence level
+
+# Initialize matrices to store results
+pivo_conf <- sub_conf <- boot_conf <- plug_conf <- multi_run_conf <- multi_run_conf1 <- 
+  matrix(0, sim, 2 * length(grid_m))
+pivo_time <- sub_time <-  matrix(0, sim, length(grid_m))
+#sub_time is to record the total time for sub-randoimzaiton: including  loading, calculating sketches (1 size m and K size b), and solve least squares
+sub_ske_all <- matrix(0, sim, grid_K)
+preli_time <- matrix(0, sim, length(grid_m)) # total time to obtain sketched least squares from X,y, including loading, calculating sketch, and solve least squares
+preli_est <- numeric(sim)
+sub_loading_time <- matrix(0, sim, length(grid_m))
+sub_sketch_time <-matrix(0, sim, length(grid_m))
+
+# Set coefficient vector for inference
+c <- rep(0, p)
+c[p] <- 1  # coefficient vector, the c[p] is one since we aim to inference on p-th coord of ls solution
+
+# Main simulation loop
+cat("\n--- Starting main simulation loop ---\n\n")
+
+#sketch_m_time = sketch_b_time = matrix(0, sim, length(grid_m))
+
+
+for (i in 1:sim) {
+  cat(sprintf("\n--- Starting simulation %d of %d ---\n", i, sim))
+  
+  for (j in 1:length(grid_m)) {
+    cat(sprintf("\n--- Processing m = %d (iteration %d of %d) ---\n", grid_m[j], j, length(grid_m)))
+    cat(sprintf("Current value of m: %d\n", grid_m[j]))
+    
+    # Set the sample size and parameters for the current iteration
+    m <- grid_m[j]
+    b <- grid_b[j]
+    K <- grid_K[j] 
+    
+    # Compute subrandomization confidence interval
+    cat("Computing subrandomization confidence interval...\n")
+    mem_bf <- Sys.procmem()$size
+    st2<-Sys.time()
+    
+    subske <- numeric(K)
+    select_m <- which(rbinom(n1, 1, m/n1) != 0)
+    D_m <- sample(c(1,-1), n1, replace=TRUE)
+    select_list <- lapply(1:K, function(k) which(rbinom(n1, 1, b/n1) != 0))
+    D_list <- lapply(1:K, function(k) sample(c(1,-1), n1, replace=TRUE))
+    sketch_m <- matrix(0, length(select_m), p)
+    sketches_b <- vector("list", K)
+    sketches_b_y <- vector("list", K)
+    for(k in 1:K) {
+      sketches_b[[k]] <- matrix(0, length(select_list[[k]]), p)
+    }
+    
+    
+    loading_time <- 0
+    sketch_time<- 0
+    for(l in 1:num_blocks) {
+      start_col <- ((l-1) * block_size + 1)
+      start_load <- Sys.time()
+      #block_data <- fread(sprintf("data_matrix_n%d_p%d.csv", n1, p), 
+      #                   select = cols,
+      #                   header = TRUE,
+      #                   data.table = FALSE)
+      
+      
+      
+      mem_bf <- Sys.procmem()$size
+      
+      
+      block_data <- fread(sprintf("data_matrix_chunk_%d_n%d_p%d.csv", l,n1,block_size),
+                          header = TRUE,
+                          data.table = FALSE)
+      mem_af <- Sys.procmem()$size    
+      cat(sprintf("RAM used in loading block %d: %s\n",l, mem_af - mem_bf))
+      cat(sprintf("The amount of total RAM used by the current R process is %s and the maximum memory usage is %s\n",
+                  Sys.procmem()$size, Sys.procmem()$peak))
+      
+      end_load <- Sys.time()
+      sub_loading_time[i,j] <- sub_loading_time[i,j] + as.numeric(difftime(end_load, start_load, units = "secs"))
+      
+      loading_time <-as.numeric(difftime(end_load, start_load, units = "secs"))
+      print(paste('time for loading block', l, "is", loading_time, 'secs'))
+      
+      
+      
+      start_sketch<- Sys.time()
+      for(t in 1:block_size) {
+        col_idx <- start_col + t - 1
+        sketch_m[, col_idx]<-SRHT(select_m, D_m, block_data[,t])
+        
+        for(k in 1:K) {
+          sketches_b[[k]][, col_idx] <- SRHT(select_list[[k]], 
+                                             D_list[[k]], 
+                                             block_data[,t])                           
+        }
+      }
+      end_sketch<-Sys.time()
+      sub_sketch_time[i,j]<- sub_sketch_time[i,j] + as.numeric(difftime(end_sketch, start_sketch, units = "secs"))
+      
+      sketch_time <-as.numeric(difftime(end_sketch, start_sketch, units = "secs"))
+      print(paste('time for generating sketch', l, "is", sketch_time, 'secs'))
+      
+      rm(block_data)
+      gc()
+    }
+    
+    start_load <- Sys.time()
+    y<-as.matrix(fread(sprintf("data_matrix_n%d_p%d.csv",n1,1), 
+                       header = TRUE,
+                       data.table = FALSE))
+    end_load <- Sys.time()                  
+    sub_loading_time[i,j]<-sub_loading_time[i,j]+ as.numeric(difftime(end_load, start_load, units = "secs"))
+    
+    start_sketch<- Sys.time()
+    sketch_m_y <- SRHT(select_m, D_m, y)
+    end_sketch<-Sys.time()
+    sub_sketch_time[i,j]<- sub_sketch_time[i,j] + as.numeric(difftime(end_sketch, start_sketch, units = "secs"))
+    
+    start_ls_b<-Sys.time()
+    for(k in 1:K){
+      sketches_b_y[[k]] <- SRHT(select_list[[k]], 
+                                D_list[[k]], 
+                                y) 
+      subske[k] <- sum(c * solve(qr(sketches_b[[k]], LAPACK = TRUE), sketches_b_y[[k]]))
+    }
+    end_ls_b<-Sys.time()
+    ls_b_time<-as.numeric(difftime(end_ls_b, start_ls_b, units = "secs"))
+    print(paste('time for K sketched LS is', ls_b_time, 'secs'))
+    
+    
+    start_ls_m<-Sys.time()
+    lsskm<- solve(qr(sketch_m, LAPACK = TRUE), sketch_m_y)
+    end_ls_m<-Sys.time()
+    ls_m_time<-as.numeric(difftime(end_ls_m, start_ls_m, units = "secs"))
+    print(paste('time for sketched LS of size m is', ls_m_time, 'secs'))
+    
+    
+    taum <- sqrt((m - p) * (n1 - p) / (n1 - m))
+    taub <- sqrt((b - p) * (n1 - p) / (n1 - b))
+    center <- sum(c * lsskm)
+    lb <- quantile(taub * (subske - center), alpha / 2) / (taum - taub)
+    rb <- quantile(taub * (subske - center), 1 - alpha / 2) / (taum - taub)
+    sub_conf[i, (2 * j - 1):(2 * j)] <- c(center - rb, center - lb)
+    ed2 <- Sys.time()
+    mem_af <- Sys.procmem()$size
+    cat(sprintf("RAM used in subrandomization: %s\n", mem_af - mem_bf))
+    cat(sprintf("The maximum memory usage is %s\n", Sys.procmem()$peak))
+    sub_time[i, j] <- difftime(ed2, st2, units = "secs")
+    
+    # Compute plug-in confidence interval
+    cat("Computing plug-in confidence interval...\n")
+    plug_v <- var(subske)
+    plug_rb <- qnorm(1 - alpha / 2, sd = sqrt(plug_v) * taub / taum)
+    plug_lb <- qnorm(alpha / 2, sd = sqrt(plug_v) * taub / taum)
+    plug_conf[i, (2 * j - 1):(2 * j)] <- c(center - plug_rb, center - plug_lb)
+    
+    # Compute multi-run confidence interval
+    cat("Computing multi-run confidence interval...\n")
+    multi_v <- var(subske)
+    multi_rb <- qnorm(1 - alpha / 2, sd = sqrt(multi_v / K))
+    multi_lb <- qnorm(alpha / 2, sd = sqrt(multi_v / K))
+    multi_center <- mean(subske)
+    multi_run_conf[i, (2 * j - 1):(2 * j)] <- c(multi_center - multi_rb, multi_center - multi_lb)
+    
+    cat("Computing pivotal confidence interval...\n")
+    st1 <- Sys.time()
+    pivo_conf[i, (2 * j - 1):(2 * j)] <- pivo_hadamard(c, n1, sketch_m, sketch_m_y, partial = 0, alpha)$conf
+    ed1 <- Sys.time()
+    pivo_time[i, j] <- difftime(ed1, st1, units = "secs")
+  }
+}
+
+
+tim <- cbind(pivo_time, sub_time, sub_loading_time, sub_sketch_time)
+conf <- cbind(pivo_conf,sub_conf, plug_conf, multi_run_conf)
+
+
+cat("time for preliminary estimator:\n")
+print(preli_time)
+
+cat("time for inference of sub-randomization:\n")
+print(tim[,2])
+
+cat("time for loading and sketch of size K:\n")
+print(tim[,3:4])
+
+print(conf)
+
+# Write results to CSV files
+write.csv(tim, sprintf("0large_simdata_lapack_time_n2power22p2e3b4e3m3e5K20rep100_%d.csv", index))
+write.csv(conf, sprintf("0large_simdata_lapack_conf_n2power22p2e3b4e3m3e5K20rep100_%d.csv", index))
