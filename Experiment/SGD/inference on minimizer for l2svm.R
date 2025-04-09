@@ -73,7 +73,7 @@ lambda0 <- 0
 model_deterministic <- gd_l2svm(X, y, learning_rate = 0.1, n_iter = 1000, lambda = lambda0)
 model_deterministic$w
 
-
+# Solution path for sgd/momentum-sgd
 sgd_l2svm_online <- function(learning_rates, n_iter = 1000, lambda = 0, 
                              w_start = NULL, w0_start = NULL, burnin = 0, use_momentum = FALSE, momentum = NULL) {
   
@@ -151,7 +151,7 @@ sgd_l2svm_online <- function(learning_rates, n_iter = 1000, lambda = 0,
   list(w = w, w0 = w0, w_path = w_path, w0_path = w0_path, loss_path = loss_path)
 }
 
-
+# CI for sub-randomamization and multi-run plug-in 
 l2svm_online_inference_ci<-function(n_iter,alpha, m, K, b, lambda0, eta, a, use_momentum=FALSE, momentum_coef = 1){
   learning_rates <- eta * (1:n_iter)^(-a) 
   momentum <- pmax(1 - momentum_coef * learning_rates, 0) 
