@@ -1,0 +1,93 @@
+# =============================================================================
+# Experimental Setup
+# =============================================================================
+
+# Problem parameters
+d <- 5
+theta <- seq(0, d, d/4) / d
+
+# Experimental parameters
+n <- 40000  # total sample size
+sim <- 50   # number of simulations
+
+# Sub-randomization parameters
+b <- 400    # sub-sketch size
+K <- 50     # number of sub-sketches
+m <- n - K * b  # main sketch size = 20000
+
+# SGD parameters
+learning_rate <- 0.5 * (1:m)^(-0.505)
+batch_size <- 1
+
+cat("=== Experimental Setup ===\n")
+cat("Problem dimension:", d, "\n")
+cat("True coefficients:", round(theta, 4), "\n")
+cat("Target coefficient (5th):", theta[5], "\n")
+cat("Total sample size (n):", n, "\n")
+cat("Main sketch size (m):", m, "\n")
+cat("Simulations:", sim, "\n")
+cat("Sub-sketch parameters: b =", b, ", K =", K, "\n\n")
+
+# =============================================================================
+# Main Experiment
+# =============================================================================
+
+# Initialize result storage
+sub_conf <- matrix(0, sim, 2)
+plug_conf <- matrix(0, sim, 2)
+
+cat("=== Running Experiment ===\n")
+
+for (i in 1:sim) {
+  cat("Simulation", i, "of", sim, "...")
+  
+  # Run sub-randomization
+  out <- conf_subrand_asgd_online(learning_rate, m, b, K, batch_size, 
+                                 alpha = 0.1, average = TRUE, heavy_ball = FALSE, momentum = 0.9)
+  
+  sub_conf[i, ] <- out$subrand_conf
+  plug_conf[i, ] <- out$plug_conf
+}
+
+# =============================================================================
+# Results Analysis
+# =============================================================================
+
+true_value <- theta[5]
+methods <- c("Sub-randomization", "Plug-in")
+all_conf <- list(sub_conf, plug_conf)
+
+cat("\n=== Results Summary ===\n")
+cat("True value:", round(true_value, 4), "\n")
+
+# Coverage analysis
+coverage_rates <- numeric(2)
+avg_width <- numeric(2)
+
+for (method in 1:2) {
+  covered <- 0
+  widths <- numeric(sim)
+  
+  for (i in 1:sim) {
+    lower <- all_conf[[method]][i, 1]
+    upper <- all_conf[[method]][i, 2]
+    widths[i] <- upper - lower
+    
+    if (true_value >= lower && true_value <= upper) {
+      covered <- covered + 1
+    }
+  }
+  
+  coverage_rates[method] <- covered / sim
+  avg_width[method] <- mean(widths)
+}
+
+cat("Method Performance:\n")
+for (method in 1:2) {
+  cat(sprintf("  %s:\n", methods[method]))
+  cat(sprintf("    Coverage rate: %.3f\n", coverage_rates[method]))
+  cat(sprintf("    Average CI width: %.4f\n", avg_width[method]))
+}
+
+
+
